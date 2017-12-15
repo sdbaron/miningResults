@@ -2,11 +2,10 @@ class Strategy {
   constructor(params) {
     const prms = Object.assign(
         {
-          perfomance: 0.000154,
-          reinvestBtc: 0.00009090,
+          reinvestBtc: 0.00008430,
           reinvestFiat: null,
           // стоимость ресурса в вычислительной мощностью 1GH/sec
-          bitBtcPrice: 0.000009090,
+          bitBtcPrice: 0.000008430,
           // стоимость ресурса в вычислительной мощностью 1GH/sec в долларах
           bitFiatPrice: 1.5,
         },
