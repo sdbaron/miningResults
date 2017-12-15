@@ -25,13 +25,15 @@ const strategy = new ImmediatelyReinvestStrategy(REINVEST_DATA)
 const perfomanceBehavior = new ConstantPerfomance(0.000000154)
 const currencyRateBehavior = new ConstCryptoCurrencyRateBehavior(1 / 16000)
 
-const farm = new Farm({ power: 20000, maintenance: 0.15 }, strategy, perfomanceBehavior, currencyRateBehavior,
+const farm = new Farm({ power: 30000, maintenance: 0.15 }, strategy, perfomanceBehavior, currencyRateBehavior,
     (dayInfo) => {
-      console.log(`${padEnd(dayInfo.day, 4)}: ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.balanceFiat, 20)} ${padEnd(dayInfo.reinvestBtc || 0, 20)} ${padEnd(dayInfo.reinvestFiat || 0, 20)}\r`)
+      // console.log(`${padEnd(dayInfo.day, 4)}: ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.balanceFiat, 20)} ${padEnd(dayInfo.reinvestBtc || 0, 20)} ${padEnd(dayInfo.reinvestFiat || 0, 20)}\r`)
+      console.log(`${padEnd(dayInfo.day, 4)}: ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.reinvestBtc || 0, 20)}\r`)
     })
 const earnBtcDays = 50
 
-console.log(`${padEnd('day', 4)}: ${padEnd('power(GH/s)', 15)} ${padEnd('add Power(GH/s)', 20, 15)} ${padEnd('balance.btc', 20)} ${padEnd('balance.fiat', 20, 15)} ${padEnd('reinvestBtc', 20)} ${padEnd('reinvestFiat', 20, 16)}\r`)
+// console.log(`${padEnd('day', 4)}: ${padEnd('power(GH/s)', 15)} ${padEnd('add Power(GH/s)', 20, 15)} ${padEnd('balance.btc', 20)} ${padEnd('balance.fiat', 20, 15)} ${padEnd('reinvestBtc', 20)} ${padEnd('reinvestFiat', 20, 16)}\r`)
+console.log(`${padEnd('day', 4)}: ${padEnd('power(GH/s)', 15)} ${padEnd('add Power(GH/s)', 20, 15)} ${padEnd('balance.btc', 20)} ${padEnd('reinvestBtc', 20)}\r`)
 farm.mine(365 - earnBtcDays)
 
 const ernStrategy = new NoReinvestStrategy({ perfomance: strategy.perfomance })
