@@ -10,8 +10,8 @@ class ImmediatelyReinvestStrategy extends Strategy {
     let spentFiat = 0
     let spentBtc = 0
     let additionalPower = 0
-    if (this.reinvestBtc && btcSum > this.reinvestBtc){
-      spentBtc = (btcSum / this.reinvestBtc ^ 0) * this.reinvestBtc
+    if (this.minValueBtcForReinvest && btcSum > this.minValueBtcForReinvest){
+      spentBtc = (btcSum / this.minValueBtcForReinvest ^ 0) * this.minValueBtcForReinvest
       additionalPower = spentBtc / this.bitBtcPrice
     } else if (this.reinvestFiat && (fiatSum = converter.convertToFiat(btcSum, day)) > this.reinvestFiat){
       spentFiat = (fiatSum / this.reinvestFiat ^ 0) * this.reinvestFiat
@@ -25,6 +25,7 @@ class ImmediatelyReinvestStrategy extends Strategy {
       investedFiat: 0
     }
   }
+  
 }
 
 module.exports = ImmediatelyReinvestStrategy

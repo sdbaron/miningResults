@@ -2,49 +2,72 @@ const ImmediatelyReinvestStrategy = require('./InvestStrategy/immediatelyReinves
 const NoReinvestStrategy = require('./InvestStrategy/noReinvestStrategy')
 const ConstantPerfomance = require('./PerfomanceBehavior/constant')
 const ConstCryptoCurrencyRateBehavior = require('./CryptoCurrencyRateBehavior/constant')
-const Farm = require('./farm')
+const MaxReinvestPlan = require('./Plans/maxReinvest')
 
-// стоимость ресурса в вычислительной мощностью 1GH/sec
-const BIT_BTC_PRICE = 0.000008430
-// стоимость ресурса в вычислительной мощностью 1GH/sec в долларах
-const BIT_FIAT_PRICE =  1.5
-
-const REINVEST_DATA = {
-  // стоимость ресурса в вычислительной мощностью 1GH/sec
-  bitBtcPrice: BIT_BTC_PRICE,
-  // стоимость 10 GH/s - объём минимальной реинвестиции
-  reinvestBtc: BIT_BTC_PRICE * 10,
-  // стоимость ресурса в вычислительной мощностью 1GH/sec в долларах
-  bitFiatPrice: BIT_FIAT_PRICE,
-  // в долларах не инвестируем
-  reinvestFiat: null,
+const FARM_INIT = {
+  power: 30000,
+  maintenance: 0.15,
+  powerLimit: 100000,
 }
 
-const strategy = new ImmediatelyReinvestStrategy(REINVEST_DATA)
-// 0.000000154 btc mining by 1 GH/s
-const perfomanceBehavior = new ConstantPerfomance(0.000000154)
-const currencyRateBehavior = new ConstCryptoCurrencyRateBehavior(1 / 16000)
+const PERFOMANCE = 0.000000154
+const RATE = 1 / 13000
 
-const farm = new Farm({ power: 30000, maintenance: 0.15 }, strategy, perfomanceBehavior, currencyRateBehavior,
-    (dayInfo) => {
-      // console.log(`${padEnd(dayInfo.day, 4)}: ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.balanceFiat, 20)} ${padEnd(dayInfo.reinvestBtc || 0, 20)} ${padEnd(dayInfo.reinvestFiat || 0, 20)}\r`)
-      console.log(`${padEnd(dayInfo.day, 4)}: ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.reinvestBtc || 0, 20)}\r`)
-    })
-const earnBtcDays = 50
+let bestStage = null
+const fiatLimit = null // 8000
+for (let miningDays = 20; miningDays < 65; miningDays++){
+  const stage = checkPlan(miningDays, fiatLimit)
+  if (fiatLimit && stage.balance.fiat <= fiatLimit) continue
+  if (!bestStage ||
+    (stage.balance.btc >= bestStage.balance.btc
+    // && (stage.executedReinvestDays + stage.executedEarningDays) <= (bestStage.executedReinvestDays + bestStage.executedEarningDays)
+    )
+  ) {
+    bestStage = stage
+  }
+}
+const stage = bestStage
+console.log(`Stage: ${padEnd(stage.name, 25, 25)} ${padEnd(stage.executedReinvestDays + stage.executedEarningDays + ' days', 4)} invest days:${padEnd(stage.executedReinvestDays, 4)} earned days:${padEnd(stage.executedEarningDays, 15)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: { ${padEnd(stage.balance.btc, 15)}btc or ${padEnd(stage.balance.fiat, 15)}$ }\r`)
 
-// console.log(`${padEnd('day', 4)}: ${padEnd('power(GH/s)', 15)} ${padEnd('add Power(GH/s)', 20, 15)} ${padEnd('balance.btc', 20)} ${padEnd('balance.fiat', 20, 15)} ${padEnd('reinvestBtc', 20)} ${padEnd('reinvestFiat', 20, 16)}\r`)
-console.log(`${padEnd('day', 4)}: ${padEnd('power(GH/s)', 15)} ${padEnd('add Power(GH/s)', 20, 15)} ${padEnd('balance.btc', 20)} ${padEnd('reinvestBtc', 20)}\r`)
-farm.mine(365 - earnBtcDays)
 
-const ernStrategy = new NoReinvestStrategy({ perfomance: strategy.perfomance })
-farm.setStrategy(ernStrategy)
-farm.setPerfomanceBehavior(perfomanceBehavior)
-farm.mine(earnBtcDays)
-
-const { btc, fiat } = farm.balance
+function checkPlan(miningDays, fiatLimit) {
+  const results = []
+  for (let maxReinvestDays = miningDays; maxReinvestDays >= 0; maxReinvestDays--) {
+    const perfomanceBehavior = new ConstantPerfomance(PERFOMANCE)
+    const currencyRateBehavior = new ConstCryptoCurrencyRateBehavior(RATE)
+    const plan = new MaxReinvestPlan(Object.assign(
+      {
+        name: `MaxReinvest ${maxReinvestDays}`,
+        miningDays: miningDays,
+        maxReinvestDays: maxReinvestDays,
+        perfomanceBehavior: perfomanceBehavior,
+        currencyRateBehavior: currencyRateBehavior,
+        fiatLimit: fiatLimit
+      },
+      FARM_INIT,
+      ),
+      // (dayInfo) => {
+      //   console.log(`${padEnd(dayInfo.day, 4)}: ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.balanceFiat, 20)} ${padEnd(dayInfo.minValueBtcForReinvest || 0, 20)} ${padEnd(dayInfo.reinvestFiat || 0, 20)}\r`)
+      //   // console.log(`${padEnd(dayInfo.day + ':', 4)} ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.minValueBtcForReinvest || 0, 20)}\r`)
+      // }
+    )
+    const stages = plan.start()
+    results.push(stages[0])
+  }
+  
+  let bestStage = null
+  results.forEach(stage => {
+    // console.log(`Stage: ${padEnd(stage.name, 25, 25)} invest days:${padEnd(stage.executedReinvestDays, 4)} earned days:${padEnd(stage.executedEarningDays, 15)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: { ${padEnd(stage.balance.btc, 15)}btc or ${padEnd(stage.balance.fiat, 15)}$ }\r`)
+    if (!bestStage || stage.balance.btc >= bestStage.balance.btc
+      && stage.executedReinvestDays + stage.executedEarningDays <= bestStage.executedReinvestDays + bestStage.executedEarningDays) {
+      bestStage = stage
+    }
+  })
+  return bestStage
+}
 
 function padEnd(value, width, trunc = 11) {
   // let s = typeof value === 'number' ? value.toLocaleString('ru') : value.toString()
-  let s = value.toLocaleString('ru')
+  let s = value.toLocaleString()
   return s.substr(0, trunc).padEnd(Math.max(width, s.length), ' ')
 }

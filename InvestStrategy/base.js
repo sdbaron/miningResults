@@ -2,7 +2,8 @@ class Strategy {
   constructor(params) {
     const prms = Object.assign(
         {
-          reinvestBtc: 0.00008430,
+          // минимальная сумма возможная для реинвестирования
+          minValueBtcForReinvest: 0.00008430,
           reinvestFiat: null,
           // стоимость ресурса в вычислительной мощностью 1GH/sec
           bitBtcPrice: 0.000008430,
@@ -13,7 +14,7 @@ class Strategy {
     )
 
     this.perfomance = prms.perfomance
-    this.reinvestBtc = prms.reinvestBtc
+    this.minValueBtcForReinvest = prms.minValueBtcForReinvest
     this.reinvestFiat = prms.reinvestFiat
     this.bitBtcPrice = prms.bitBtcPrice
     this.bitFiatPrice = prms.bitFiatPrice
@@ -28,7 +29,10 @@ class Strategy {
   howMatchReinvest(day, sum) {
     throw new Error('not inplemented')
   }
-
+  
+  getPowerPrice(power){
+    return power * this.bitBtcPrice
+  }
 }
 
 module.exports = Strategy

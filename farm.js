@@ -2,62 +2,44 @@ const ImmediatelyReinvestStrategy = require('./InvestStrategy/immediatelyReinves
 const NoReinvestStrategy = require('./InvestStrategy/noReinvestStrategy')
 const ConstantPerfomance = require('./PerfomanceBehavior/constant')
 const ConstCryptoCurrencyRateBehavior = require('./CryptoCurrencyRateBehavior/constant')
-
-class Balance {
-  constructor(parameters) {
-    const params = Object.assign({ fiat: 0, btc: 0 }, parameters)
-    this.converter = params.converter
-    this.fiat = params.fiat || 0
-    this.btc = params.btc || 0
-  }
-
-  changeFiat(addValue, day) {
-    this.fiat += addValue
-    this.btc = this.converter.convertToBtc(this.fiat, day)
-  }
-
-  changeBtc(addValue, day) {
-    this.btc += addValue
-    this.fiat = this.converter.convertToFiat(this.btc, day)
-  }
-
-  setConverter(converter) {
-    this.converter = converter
-  }
-}
-
+const Balance = require('./balance')
 
 class Farm {
   constructor(parameters, strategy, perfomanceBehavior, currencyRateBehavior, onDayInfo) {
-    const params = Object.assign({ power: 30100, maintenance: 0.15 }, parameters)
+    const params = Object.assign({ power: 30100, maintenance: 0.15, powerLimit: 200000 }, parameters)
     this.power = params.power
+    this.powerLimit = params.powerLimit || 200000
     this.maintenance = params.maintenance || 0
+    this.fiatLimit = params.fiatLimit
+    this.btcLimit = params.btcLimit
     this.investStrategy = strategy
     this.perfomanceBehavior = perfomanceBehavior
     this.currencyRateBehavior = currencyRateBehavior
     this.balance = new Balance({ converter: this.currencyRateBehavior })
     this.onDayInfo = onDayInfo
   }
-
+  
   getCoins(day) {
     return this.power * this.perfomanceBehavior.getPerfomance(day)
   }
-
+  
   setStrategy(strategy) {
     this.investStrategy = strategy
   }
-
+  
   setPerfomanceBehavior(pb) {
     this.perfomanceBehavior = pb
   }
-
+  
   setCurrencyRateBehavior(crb) {
     this.currencyRateBehavior = crb
     this.balance.setConverter(crb)
   }
-
+  
   mine(days) {
-    for (let day = 0; day < days; day++) {
+    let day = 0
+    const { powerLimit } = this
+    for (; day < days; day++) {
       // выплата = намайненное минус обслуживание
       const payon = this.getCoins(day) * (1 - this.maintenance)
       this.balance.changeBtc(payon)
@@ -78,6 +60,13 @@ class Farm {
           reinvestFiat = investedFiat - spentFiat
           this.balance.changeFiat(reinvestFiat)
         }
+        const canceledInvest = this.power > powerLimit
+        if (canceledInvest) {
+          const powerDifference = this.power - powerLimit
+          this.power = powerLimit
+          this.balance.changeBtc(this.investStrategy.getPowerPrice(powerDifference))
+        }
+        
         this.onDayInfo && this.onDayInfo({
           day,
           power: this.power,
@@ -87,8 +76,12 @@ class Farm {
           reinvestBtc: -reinvestBtc,
           reinvestFiat: -reinvestFiat
         })
+        
+        if (canceledInvest) break
+        if ((this.btcLimit && this.balance.btc >= this.btcLimit) || (this.fiatLimit && this.balance.fiat >= this.fiatLimit) ) break
       }
     }
+    return day
   }
 }
 
