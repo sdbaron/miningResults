@@ -27,7 +27,7 @@ for (let miningDays = 20; miningDays < 350; miningDays++){
   }
 }
 const stage = bestStage
-console.log(`Stage: ${padEnd(stage.name, 25, 25)} ${padEnd(stage.executedReinvestDays + stage.executedEarningDays + ' days', 4)} invest days:${padEnd(stage.executedReinvestDays, 4)} earned days:${padEnd(stage.executedEarningDays, 15)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: { ${padEnd(stage.balance.btc, 15)}btc or ${padEnd(stage.balance.fiat, 15)}$ }\r`)
+console.log(`Stage: ${padEnd(stage.name, 25, 25)} ${padEnd(stage.executedReinvestDays + stage.executedEarningDays + ' days', 4)} [investing ${padEnd(stage.executedReinvestDays + ' days', 9)} earning ${padEnd(stage.executedEarningDays + ' days]', 10)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: [ ${padEnd(stage.balance.btc.toLocaleString() + ' btc', 10)} or ${padEnd(stage.balance.fiat.toLocaleString() + '$]', 15)} \r`)
 
 
 function checkPlan(miningDays, fiatLimit) {
