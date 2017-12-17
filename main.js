@@ -11,16 +11,16 @@ const FARM_INIT = {
 }
 
 const PERFOMANCE = 0.000000154
-const RATE = 1 / 13000
+const RATE = 1 / 15000
 
 let bestStage = null
-const fiatLimit = null // 8000
-for (let miningDays = 20; miningDays < 65; miningDays++){
+const fiatLimit = 4500
+for (let miningDays = 20; miningDays < 350; miningDays++){
   const stage = checkPlan(miningDays, fiatLimit)
   if (fiatLimit && stage.balance.fiat <= fiatLimit) continue
   if (!bestStage ||
     (stage.balance.btc >= bestStage.balance.btc
-    // && (stage.executedReinvestDays + stage.executedEarningDays) <= (bestStage.executedReinvestDays + bestStage.executedEarningDays)
+    && (stage.executedReinvestDays + stage.executedEarningDays) <= (bestStage.executedReinvestDays + bestStage.executedEarningDays)
     )
   ) {
     bestStage = stage
