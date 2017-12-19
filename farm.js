@@ -1,9 +1,11 @@
 const Balance = require('./balance')
+const PowerBit = require('./powerBit')
+const PowerBits = require('./powerBits')
 
 class Farm {
   constructor(parameters, strategy, perfomanceBehavior, currencyRateBehavior, onDayInfo) {
-    const params = Object.assign({ power: 30100, maintenance: 0.15, powerLimit: 200000 }, parameters)
-    this.power = params.power
+    const params = Object.assign({}, parameters)
+    this.powerBits = new PowerBits(params.powerBits)
     this.powerLimit = params.powerLimit
     this.maintenance = params.maintenance || 0
     this.fiatLimit = params.fiatLimit
@@ -16,7 +18,7 @@ class Farm {
   }
   
   getCoins(day) {
-    return this.power * this.perfomanceBehavior.getPerfomance(day)
+    return this.powerBits.getPower(day) * this.perfomanceBehavior.getPerfomance(day)
   }
   
   setStrategy(strategy) {
@@ -45,7 +47,7 @@ class Farm {
         const { spentFiat, spentBtc, additionalPower, investedBtc, investedFiat } = reinvest
         // ренивестируем
         if (additionalPower) {
-          this.power += additionalPower
+          this.powerBits.add(new PowerBit(additionalPower, day))
         }
         let reinvestBtc
         let reinvestFiat
@@ -56,16 +58,18 @@ class Farm {
           reinvestFiat = investedFiat - spentFiat
           this.balance.changeFiat(reinvestFiat)
         }
-        const canceledInvest = powerLimit && this.power > powerLimit
+        const dayPower = this.powerBits.getPower(day)
+        const canceledInvest = powerLimit && dayPower > powerLimit
         if (canceledInvest) {
-          const powerDifference = this.power - powerLimit
-          this.power = powerLimit
+          const powerDifference = dayPower - powerLimit
+          this.powerBits.sub(new PowerBit(-powerDifference, day))
           this.balance.changeBtc(this.investStrategy.getPowerPrice(powerDifference))
         }
         
+        // отдадим callback функции информацию майнинге за день
         this.onDayInfo && this.onDayInfo({
           day,
-          power: this.power,
+          powerBits: this.powerBits,
           additionalPower,
           balanceBtc: this.balance.btc,
           balanceFiat: this.balance.fiat,

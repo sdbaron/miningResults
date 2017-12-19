@@ -3,6 +3,9 @@ const NoReinvestStrategy = require('../InvestStrategy/noReinvestStrategy')
 const ConstantPerfomance = require('../PerfomanceBehavior/constant')
 const ConstCryptoCurrencyRateBehavior = require('../CryptoCurrencyRateBehavior/constant')
 const Farm = require('../farm')
+const PowerBit = require('../powerBit')
+const PowerBits = require('../powerBits')
+
 
 class MaxReinvest {
   /**
@@ -14,11 +17,7 @@ class MaxReinvest {
    * @param onDayInfo
    */
   constructor(parameters, onDayInfo) {
-    const params = Object.assign({
-      power: 30000,
-      maintenance: 0.15,
-      powerLimit: 100000,
-    }, parameters)
+    const params = Object.assign({}, parameters)
     
     this.name = params.name || 'MaxReinvest'
     this.onDayInfo = onDayInfo
@@ -26,7 +25,7 @@ class MaxReinvest {
     this.maxReinvestDays = params.maxReinvestDays || this.miningDays
     this.perfomanceBehavior = params.perfomanceBehavior
     this.currencyRateBehavior = params.currencyRateBehavior
-    this.power = params.power
+    this.powerBits = params.powerBits
     this.maintenance = params.maintenance
     this.powerLimit = params.powerLimit
     this.fiatLimit = params.fiatLimit
@@ -37,7 +36,7 @@ class MaxReinvest {
   start() {
     const strategy = new ImmediatelyReinvestStrategy(this.reinvestInfo)
     const farm = new Farm(
-      { power: this.power,
+      { powerBits: this.powerBits,
         maintenance: this.maintenance,
         powerLimit: this.powerLimit,
         fiatMax: this.fiatLimit,
@@ -58,7 +57,7 @@ class MaxReinvest {
       name: `${this.name}:Reinvest.`,
       orderedDays: this.maxReinvestDays,
       executedDays: executedDays,
-      power: farm.power,
+      powerBits: farm.powerBits,
       balance: { btc, fiat }
     }
     
@@ -72,7 +71,7 @@ class MaxReinvest {
       name: `${this.name}:Earning.`,
       orderedDays: this.maxReinvestDays,
       executedDays: executedDays,
-      power: farm.power,
+      powerBits: farm.powerBits,
       balance: { btc: farm.balance.btc, fiat: farm.balance.fiat }
     }
     
@@ -82,7 +81,7 @@ class MaxReinvest {
       executedReinvestDays: stageReinvestResult.executedDays,
       orderedEarinigDays: stageEarinigResult.orderedDays,
       executedEarningDays: stageEarinigResult.executedDays,
-      power: farm.power,
+      powerBits: farm.powerBits,
       balance: { btc: farm.balance.btc, fiat: farm.balance.fiat }
     }
     
