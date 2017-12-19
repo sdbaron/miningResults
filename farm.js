@@ -4,7 +4,7 @@ class Farm {
   constructor(parameters, strategy, perfomanceBehavior, currencyRateBehavior, onDayInfo) {
     const params = Object.assign({ power: 30100, maintenance: 0.15, powerLimit: 200000 }, parameters)
     this.power = params.power
-    this.powerLimit = params.powerLimit || 200000
+    this.powerLimit = params.powerLimit
     this.maintenance = params.maintenance || 0
     this.fiatLimit = params.fiatLimit
     this.btcLimit = params.btcLimit
@@ -56,7 +56,7 @@ class Farm {
           reinvestFiat = investedFiat - spentFiat
           this.balance.changeFiat(reinvestFiat)
         }
-        const canceledInvest = this.power > powerLimit
+        const canceledInvest = powerLimit && this.power > powerLimit
         if (canceledInvest) {
           const powerDifference = this.power - powerLimit
           this.power = powerLimit

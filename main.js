@@ -12,7 +12,7 @@ const FARM_INIT = {
   powerLimit: 100000,
 }
 
-const PERFOMANCE = 0.000000154
+const PERFOMANCE = 0.0000001430
 const RATE = 1 / 18000 // BTC / Dollar
 
 
@@ -27,41 +27,48 @@ const params = {
   btcLimit: null,
   perfomanceBehavior: null,
   currencyRateBehavior,
-  shouldCollectDayInfo: false
+  shouldCollectDayInfo: false,
 }
 
-// params.perfomanceBehavior = new LinearDecreasingPerfomance(PERFOMANCE, PERFOMANCE / 2, params.maxMiningDays)
-params.perfomanceBehavior = new ConstantPerfomance(PERFOMANCE)
+params.perfomanceBehavior = new LinearDecreasingPerfomance(PERFOMANCE, PERFOMANCE / 2, params.maxMiningDays)
+// params.perfomanceBehavior = new ConstantPerfomance(PERFOMANCE)
 
 params.fiatLimit = firstInvestment // майним, пока не получим 4500$
 let stage = findMaxProfit(reinvestInfo, FARM_INIT, params)
 
 let spentDays = stage.executedReinvestDays + stage.executedEarningDays
 console.log(`\n Quickest way for return ${params.fiatLimit}$. Having farm power:${(FARM_INIT.power / 1000).toLocaleString()}TH/s Rate:${(1 / RATE)}$ for BTC\n`)
-console.log(`${spentDays + ' days'} [investing ${stage.executedReinvestDays + 'days'} earning ${stage.executedEarningDays}days Power:${stage.power.toLocaleString()}GH/s Balance:[ ${stage.balance.btc.toLocaleString() + ' btc'} or ${stage.balance.fiat.toLocaleString() + '$]'} \r`)
+console.log(`${spentDays + ' days'} [investing ${stage.executedReinvestDays + 'days'} earning ${stage.executedEarningDays}days Power:${(stage.power/ 1000).toLocaleString()}TH/s Balance:[ ${stage.balance.btc.toLocaleString() + ' btc'} or ${stage.balance.fiat.toLocaleString() + '$]'} \r`)
 
 params.maxMiningDays -= spentDays
 params.fiatLimit = null // майним без ограничения профита
 params.perfomanceBehavior.setDayShift(spentDays)
-// начнём с текщей мощности
+// начнём с текущей мощности
 const startPower = stage.power
-console.log(`\n MAX profit plan for ${params.maxMiningDays} days and  Rate:${(1 / RATE)}$ for BTC:\n`)
+console.log(`\n MAX profit plan for ${params.maxMiningDays} days and Rate:${(1 / RATE)}$ for BTC  start with Power:${(stage.power/ 1000).toLocaleString()}TH/s:\n`)
 
-let prevStage = stage
+// let prevStage = stage
 
-for (let powerLimit = startPower; powerLimit < 100000000;) {
-  let stage = findMaxProfit(reinvestInfo, Object.assign({}, FARM_INIT, { powerLimit }), params)
-  let spentDays = stage.executedReinvestDays + stage.executedEarningDays
-  console.log(`power limit: ${(powerLimit / 1000).toLocaleString()}TH/s ${padEnd(spentDays + ' days', 4)} [investing ${padEnd(stage.executedReinvestDays + ' days', 9)} earning ${padEnd(stage.executedEarningDays + ' days]', 10)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: [ ${padEnd(stage.balance.btc.toLocaleString() + ' btc', 10)} or ${padEnd(stage.balance.fiat.toLocaleString() + '$]', 20, 20)} \r`)
-  
-  if (!prevStage) prevStage = stage
-  else {
-    if (stage.balance.btc <= prevStage.balance.btc) break
-    prevStage = stage
-  }
-  
-  (powerLimit >= 100000) || (powerLimit = 0)
-  powerLimit += 100000
+f()
+
+function f() {
+// for (let powerLimit = startPower; powerLimit < 100000000;) {
+  const powerLimit = 100000 * 1000;
+  const farmInit = Object.assign({}, FARM_INIT, {power: startPower, powerLimit})
+  const stage = findMaxProfit(reinvestInfo, farmInit, params)
+  const spentDays = stage.executedReinvestDays + stage.executedEarningDays
+  console.log(`power limit: ${(farmInit.powerLimit / 1000).toLocaleString()}TH/s ${padEnd(spentDays + ' days', 4)} [investing ${padEnd(stage.executedReinvestDays + ' days', 9)} earning ${padEnd(stage.executedEarningDays + ' days]', 10)} currentPower: ${(stage.power/1000).toLocaleString()}TH/s  Balance: [ ${padEnd(stage.balance.btc.toLocaleString() + ' btc', 10)} or ${padEnd(stage.balance.fiat.toLocaleString() + '$]', 20, 20)} \r`)
 }
+
+
+// if (!prevStage) prevStage = stage
+// else {
+//   if (stage.balance.btc <= prevStage.balance.btc) break
+//   prevStage = stage
+// }
+
+//   (powerLimit >= 100000) || (powerLimit = 0)
+//   powerLimit += 100000
+// }
 
 
