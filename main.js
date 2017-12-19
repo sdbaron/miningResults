@@ -1,73 +1,67 @@
-const ImmediatelyReinvestStrategy = require('./InvestStrategy/immediatelyReinvestStrategy')
-const NoReinvestStrategy = require('./InvestStrategy/noReinvestStrategy')
 const ConstantPerfomance = require('./PerfomanceBehavior/constant')
+const LinearDecreasingPerfomance = require('./PerfomanceBehavior/decreasing')
 const ConstCryptoCurrencyRateBehavior = require('./CryptoCurrencyRateBehavior/constant')
-const MaxReinvestPlan = require('./Plans/maxReinvest')
+const findMaxProfit = require('./Plans/findMaxProfit')
+const { REINVEST_BTC_DATA, BIT_BTC_PRICE, BIT_FIAT_PRICE } = require('./settings')
+
+const { padEnd } = require('./settings')
 
 const FARM_INIT = {
   power: 30000,
   maintenance: 0.15,
-  powerLimit: 100000,
+  powerLimit: 5000000,
 }
 
 const PERFOMANCE = 0.000000154
-const RATE = 1 / 15000
+const RATE = 1 / 18000
 
-let bestStage = null
-const fiatLimit = 4500
-for (let miningDays = 20; miningDays < 350; miningDays++){
-  const stage = checkPlan(miningDays, fiatLimit)
-  if (fiatLimit && stage.balance.fiat <= fiatLimit) continue
-  if (!bestStage ||
-    (stage.balance.btc >= bestStage.balance.btc
-    && (stage.executedReinvestDays + stage.executedEarningDays) <= (bestStage.executedReinvestDays + bestStage.executedEarningDays)
-    )
-  ) {
-    bestStage = stage
-  }
+
+const currencyRateBehavior = new ConstCryptoCurrencyRateBehavior(RATE)
+
+const reinvestInfo = REINVEST_BTC_DATA
+// сколько было вложено
+const firstInvestment = FARM_INIT.power * BIT_FIAT_PRICE
+const params = {
+  maxMiningDays: 355, // всегод дней для майнинга
+  fiatLimit: firstInvestment, // 4500, // майним, пока не вернём первоначальные инвкстиции
+  btcLimit: null,
+  perfomanceBehavior: null,
+  currencyRateBehavior,
+  shouldCollectDayInfo: false
 }
-const stage = bestStage
-console.log(`Stage: ${padEnd(stage.name, 25, 25)} ${padEnd(stage.executedReinvestDays + stage.executedEarningDays + ' days', 4)} [investing ${padEnd(stage.executedReinvestDays + ' days', 9)} earning ${padEnd(stage.executedEarningDays + ' days]', 10)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: [ ${padEnd(stage.balance.btc.toLocaleString() + ' btc', 10)} or ${padEnd(stage.balance.fiat.toLocaleString() + '$]', 15)} \r`)
 
+// params.perfomanceBehavior = new LinearDecreasingPerfomance(PERFOMANCE, PERFOMANCE / 2, params.maxMiningDays)
+params.perfomanceBehavior = new ConstantPerfomance(PERFOMANCE)
 
-function checkPlan(miningDays, fiatLimit) {
-  const results = []
-  for (let maxReinvestDays = miningDays; maxReinvestDays >= 0; maxReinvestDays--) {
-    const perfomanceBehavior = new ConstantPerfomance(PERFOMANCE)
-    const currencyRateBehavior = new ConstCryptoCurrencyRateBehavior(RATE)
-    const plan = new MaxReinvestPlan(Object.assign(
-      {
-        name: `MaxReinvest ${maxReinvestDays}`,
-        miningDays: miningDays,
-        maxReinvestDays: maxReinvestDays,
-        perfomanceBehavior: perfomanceBehavior,
-        currencyRateBehavior: currencyRateBehavior,
-        fiatLimit: fiatLimit
-      },
-      FARM_INIT,
-      ),
-      // (dayInfo) => {
-      //   console.log(`${padEnd(dayInfo.day, 4)}: ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.balanceFiat, 20)} ${padEnd(dayInfo.minValueBtcForReinvest || 0, 20)} ${padEnd(dayInfo.reinvestFiat || 0, 20)}\r`)
-      //   // console.log(`${padEnd(dayInfo.day + ':', 4)} ${padEnd(dayInfo.power, 15)} ${padEnd(dayInfo.additionalPower || 0, 20, 10)} ${padEnd(dayInfo.balanceBtc, 20)} ${padEnd(dayInfo.minValueBtcForReinvest || 0, 20)}\r`)
-      // }
-    )
-    const stages = plan.start()
-    results.push(stages[0])
+params.fiatLimit = firstInvestment // майним, пока не получим 4500$
+let stage = findMaxProfit(reinvestInfo, FARM_INIT, params)
+
+let spentDays = stage.executedReinvestDays + stage.executedEarningDays
+console.log(`\n Quickest way for return ${params.fiatLimit}$. Having farm power:${(FARM_INIT.power / 1000).toLocaleString()}TH/s Rate:${(1 / RATE)}$ for BTC\n`)
+console.log(`${spentDays + ' days'} [investing ${stage.executedReinvestDays + 'days'} earning ${stage.executedEarningDays}days Power:${stage.power.toLocaleString()}GH/s Balance:[ ${stage.balance.btc.toLocaleString() + ' btc'} or ${stage.balance.fiat.toLocaleString() + '$]'} \r`)
+
+params.maxMiningDays -= spentDays
+params.fiatLimit = null // майним без ограничения профита
+params.perfomanceBehavior.setDayShift(spentDays)
+// начнём с текщей мощности
+const startPower = stage.power
+console.log(`\n MAX profit plan for ${params.maxMiningDays} days and  Rate:${(1 / RATE)}$ for BTC:\n`)
+
+let prevStage = stage
+
+for (let powerLimit = startPower; powerLimit < 10000000;) {
+  let stage = findMaxProfit(reinvestInfo, Object.assign({}, FARM_INIT, { powerLimit }), params)
+  let spentDays = stage.executedReinvestDays + stage.executedEarningDays
+  console.log(`power limit: ${(powerLimit / 1000).toLocaleString()}TH/s ${padEnd(spentDays + ' days', 4)} [investing ${padEnd(stage.executedReinvestDays + ' days', 9)} earning ${padEnd(stage.executedEarningDays + ' days]', 10)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: [ ${padEnd(stage.balance.btc.toLocaleString() + ' btc', 10)} or ${padEnd(stage.balance.fiat.toLocaleString() + '$]', 20, 20)} \r`)
+  
+  if (!prevStage) prevStage = stage
+  else {
+    if (stage.balance.btc <= prevStage.balance.btc) break
+    prevStage = stage
   }
   
-  let bestStage = null
-  results.forEach(stage => {
-    // console.log(`Stage: ${padEnd(stage.name, 25, 25)} invest days:${padEnd(stage.executedReinvestDays, 4)} earned days:${padEnd(stage.executedEarningDays, 15)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: { ${padEnd(stage.balance.btc, 15)}btc or ${padEnd(stage.balance.fiat, 15)}$ }\r`)
-    if (!bestStage || stage.balance.btc >= bestStage.balance.btc
-      && stage.executedReinvestDays + stage.executedEarningDays <= bestStage.executedReinvestDays + bestStage.executedEarningDays) {
-      bestStage = stage
-    }
-  })
-  return bestStage
+  (powerLimit >= 100000) || (powerLimit = 0)
+  powerLimit += 100000
 }
 
-function padEnd(value, width, trunc = 11) {
-  // let s = typeof value === 'number' ? value.toLocaleString('ru') : value.toString()
-  let s = value.toLocaleString()
-  return s.substr(0, trunc).padEnd(Math.max(width, s.length), ' ')
-}
+

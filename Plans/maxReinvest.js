@@ -3,7 +3,6 @@ const NoReinvestStrategy = require('../InvestStrategy/noReinvestStrategy')
 const ConstantPerfomance = require('../PerfomanceBehavior/constant')
 const ConstCryptoCurrencyRateBehavior = require('../CryptoCurrencyRateBehavior/constant')
 const Farm = require('../farm')
-const { REINVEST_BTC_DATA } = require('../settings')
 
 class MaxReinvest {
   /**
@@ -11,6 +10,7 @@ class MaxReinvest {
    * @param {Object} parameters
    * @param {number} parameters.miningDays Общая продолжительность манинга
    * @param {number} parameters.maxReinvestDays Максимальная длительность реинвестирования
+   * @param {object} parameters.reinvestInfo Данные о лимитахреинвестирования
    * @param onDayInfo
    */
   constructor(parameters, onDayInfo) {
@@ -31,10 +31,11 @@ class MaxReinvest {
     this.powerLimit = params.powerLimit
     this.fiatLimit = params.fiatLimit
     this.btcLimit = params.btcLimit
+    this.reinvestInfo = params.reinvestInfo
   }
   
   start() {
-    const strategy = new ImmediatelyReinvestStrategy(REINVEST_BTC_DATA)
+    const strategy = new ImmediatelyReinvestStrategy(this.reinvestInfo)
     const farm = new Farm(
       { power: this.power,
         maintenance: this.maintenance,

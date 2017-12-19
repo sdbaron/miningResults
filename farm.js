@@ -1,7 +1,3 @@
-const ImmediatelyReinvestStrategy = require('./InvestStrategy/immediatelyReinvestStrategy')
-const NoReinvestStrategy = require('./InvestStrategy/noReinvestStrategy')
-const ConstantPerfomance = require('./PerfomanceBehavior/constant')
-const ConstCryptoCurrencyRateBehavior = require('./CryptoCurrencyRateBehavior/constant')
 const Balance = require('./balance')
 
 class Farm {
