@@ -9,7 +9,7 @@ const { padEnd } = require('./settings')
 const FARM_INIT = {
   power: 30000,
   maintenance: 0.15,
-  powerLimit: 5000000,
+  powerLimit: 100000,
 }
 
 const PERFOMANCE = 0.000000154
