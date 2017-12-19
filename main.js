@@ -13,7 +13,7 @@ const FARM_INIT = {
 }
 
 const PERFOMANCE = 0.000000154
-const RATE = 1 / 18000
+const RATE = 1 / 18000 // BTC / Dollar
 
 
 const currencyRateBehavior = new ConstCryptoCurrencyRateBehavior(RATE)
