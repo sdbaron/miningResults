@@ -49,7 +49,7 @@ console.log(`\n MAX profit plan for ${params.maxMiningDays} days and  Rate:${(1 
 
 let prevStage = stage
 
-for (let powerLimit = startPower; powerLimit < 10000000;) {
+for (let powerLimit = startPower; powerLimit < 100000000;) {
   let stage = findMaxProfit(reinvestInfo, Object.assign({}, FARM_INIT, { powerLimit }), params)
   let spentDays = stage.executedReinvestDays + stage.executedEarningDays
   console.log(`power limit: ${(powerLimit / 1000).toLocaleString()}TH/s ${padEnd(spentDays + ' days', 4)} [investing ${padEnd(stage.executedReinvestDays + ' days', 9)} earning ${padEnd(stage.executedEarningDays + ' days]', 10)} currentPower: ${padEnd(stage.power, 15)} GH/s Balance: [ ${padEnd(stage.balance.btc.toLocaleString() + ' btc', 10)} or ${padEnd(stage.balance.fiat.toLocaleString() + '$]', 20, 20)} \r`)
